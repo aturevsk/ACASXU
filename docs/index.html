@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACAS Xu - ONNX to Quantized Simulink to Embedded C</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/c.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/matlab.min.js"></script>
+<style>
+:root {
+  --bg: #0a1628;
+  --surface: #112240;
+  --surface2: #1a3258;
+  --border: #234578;
+  --accent: #0076A8;
+  --green: #77AC30;
+  --yellow: #EDB120;
+  --red: #A2142F;
+  --purple: #7E2F8E;
+  --text: #e2e8f0;
+  --muted: #8899b8;
+  --mathworks-blue: #0076A8;
+  --mathworks-orange: #D95319;
+  --mathworks-gold: #EDB120;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Topbar */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  height: 60px;
+  gap: 24px;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.topbar-logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--mathworks-blue);
+  letter-spacing: -0.5px;
+}
+
+.topbar-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.topbar-nav {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  overflow-x: auto;
+}
+
+.topbar-nav button {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.topbar-nav button:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.topbar-nav button.active {
+  color: var(--mathworks-blue);
+  background: rgba(0, 118, 168, 0.15);
+}
+
+/* Main content */
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+/* Stat cards */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.stat-card:hover {
+  border-color: var(--mathworks-blue);
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.stat-card:nth-child(1) .stat-value { color: var(--mathworks-blue); }
+.stat-card:nth-child(2) .stat-value { color: var(--green); }
+.stat-card:nth-child(3) .stat-value { color: var(--mathworks-orange); }
+.stat-card:nth-child(4) .stat-value { color: var(--purple); }
+
+/* Tables */
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th, td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--surface2);
+}
+
+td {
+  color: var(--text);
+}
+
+tr:hover td {
+  background: rgba(0, 118, 168, 0.05);
+}
+
+tr.total-row td {
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+  color: var(--mathworks-blue);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge-blue { background: rgba(0, 118, 168, 0.2); color: var(--mathworks-blue); }
+.badge-green { background: rgba(119, 172, 48, 0.2); color: var(--green); }
+.badge-orange { background: rgba(217, 83, 25, 0.2); color: var(--mathworks-orange); }
+.badge-red { background: rgba(162, 20, 47, 0.2); color: var(--red); }
+.badge-purple { background: rgba(126, 47, 142, 0.2); color: var(--purple); }
+.badge-gold { background: rgba(237, 177, 32, 0.2); color: var(--mathworks-gold); }
+
+/* Description */
+.description {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+/* Pipeline */
+.pipeline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 16px 0;
+  margin-bottom: 24px;
+}
+
+.pipeline-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pipeline-box {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.pipeline-box.fail {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.pipeline-box.success {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.pipeline-box.active {
+  border-color: var(--mathworks-blue);
+  color: var(--mathworks-blue);
+}
+
+.pipeline-box.gold {
+  border-color: var(--mathworks-gold);
+  color: var(--mathworks-gold);
+}
+
+.pipeline-arrow {
+  color: var(--muted);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* Workflow steps */
+.workflow-steps {
+  display: grid;
+  gap: 16px;
+}
+
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  gap: 16px;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: rgba(0, 118, 168, 0.15);
+  color: var(--mathworks-blue);
+}
+
+.step-content h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.step-content p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.step-content code {
+  background: var(--surface2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--mathworks-orange);
+}
+
+/* Chart container */
+.chart-container {
+  position: relative;
+  height: 400px;
+  margin-bottom: 24px;
+}
+
+/* Code blocks */
+details {
+  margin-bottom: 16px;
+}
+
+summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+
+summary:hover {
+  border-color: var(--mathworks-blue);
+}
+
+summary::before {
+  content: '\25B6';
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+
+details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+details[open] summary {
+  border-radius: 8px 8px 0 0;
+  border-bottom-color: transparent;
+}
+
+.code-block {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: auto;
+  max-height: 500px;
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--bg) !important;
+}
+
+.code-block code {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.loading-code {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Simulink diagram */
+.block-diagram {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 20px 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.block-box {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.block-box.inport { border-color: var(--green); color: var(--green); }
+.block-box.cast { border-color: var(--mathworks-orange); color: var(--mathworks-orange); }
+.block-box.fc { border-color: var(--mathworks-blue); color: var(--mathworks-blue); }
+.block-box.relu { border-color: var(--mathworks-gold); color: var(--mathworks-gold); }
+.block-box.outport { border-color: var(--purple); color: var(--purple); }
+
+.block-arrow {
+  color: var(--muted);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* API docs */
+.api-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+
+.api-card h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--mathworks-blue);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.api-card p {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 48px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .topbar { padding: 0 12px; gap: 12px; }
+  .topbar-subtitle { display: none; }
+  .main { padding: 16px 12px 60px; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .pipeline { flex-wrap: wrap; }
+}
+
+/* Two-col layout */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .two-col { grid-template-columns: 1fr; }
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.section-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+/* Subsystem tree */
+.tree {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text);
+}
+
+.tree .folder { color: var(--mathworks-blue); font-weight: 600; }
+.tree .file { color: var(--muted); }
+.tree .indent { color: var(--border); }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">ACAS Xu</div>
+    <div class="topbar-subtitle">ONNX &rarr; Quantized Simulink &rarr; Embedded C</div>
+  </div>
+  <nav class="topbar-nav">
+    <button class="active" onclick="showPage('overview')">Overview</button>
+    <button onclick="showPage('workflow')">Workflow</button>
+    <button onclick="showPage('quantization')">Quantization</button>
+    <button onclick="showPage('code')">Generated Code</button>
+    <button onclick="showPage('simulink')">Simulink Model</button>
+  </nav>
+</div>
+
+<div class="main">
+
+<!-- ==================== OVERVIEW PAGE ==================== -->
+<div id="page-overview" class="page active">
+  <p class="description">
+    ACAS Xu (Airborne Collision Avoidance System for Unmanned Aircraft) neural network imported from ONNX,
+    rebuilt as a native MATLAB <code>dlnetwork</code>, quantized to INT8 via <code>dlquantizer</code>,
+    exported to Simulink with <code>exportNetworkToSimulink</code>, and C code generated via Embedded Coder.
+  </p>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-value">7</div>
+      <div class="stat-label">Layers (FC + ReLU)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">13,005</div>
+      <div class="stat-label">Parameters</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">INT8</div>
+      <div class="stat-label">Quantization</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">320</div>
+      <div class="stat-label">Lines of C</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Model Architecture</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Layer</th><th>Type</th><th>Input</th><th>Output</th><th>Parameters</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Input</td><td><span class="badge badge-green">featureInputLayer</span></td><td>-</td><td>5</td><td>0</td></tr>
+          <tr><td>fc1</td><td><span class="badge badge-blue">fullyConnectedLayer</span></td><td>5</td><td>50</td><td>300 (W: 50x5, B: 50)</td></tr>
+          <tr><td>relu1</td><td><span class="badge badge-gold">reluLayer</span></td><td>50</td><td>50</td><td>0</td></tr>
+          <tr><td>fc2</td><td><span class="badge badge-blue">fullyConnectedLayer</span></td><td>50</td><td>50</td><td>2,550</td></tr>
+          <tr><td>relu2</td><td><span class="badge badge-gold">reluLayer</span></td><td>50</td><td>50</td><td>0</td></tr>
+          <tr><td>fc3</td><td><span class="badge badge-blue">fullyConnectedLayer</span></td><td>50</td><td>50</td><td>2,550</td></tr>
+          <tr><td>relu3</td><td><span class="badge badge-gold">reluLayer</span></td><td>50</td><td>50</td><td>0</td></tr>
+          <tr><td>fc4</td><td><span class="badge badge-blue">fullyConnectedLayer</span></td><td>50</td><td>50</td><td>2,550</td></tr>
+          <tr><td>relu4</td><td><span class="badge badge-gold">reluLayer</span></td><td>50</td><td>50</td><td>0</td></tr>
+          <tr><td>fc5</td><td><span class="badge badge-blue">fullyConnectedLayer</span></td><td>50</td><td>50</td><td>2,550</td></tr>
+          <tr><td>relu5</td><td><span class="badge badge-gold">reluLayer</span></td><td>50</td><td>50</td><td>0</td></tr>
+          <tr><td>fc6</td><td><span class="badge badge-blue">fullyConnectedLayer</span></td><td>50</td><td>50</td><td>2,550</td></tr>
+          <tr><td>relu6</td><td><span class="badge badge-gold">reluLayer</span></td><td>50</td><td>50</td><td>0</td></tr>
+          <tr><td>fc7</td><td><span class="badge badge-blue">fullyConnectedLayer</span></td><td>50</td><td>5</td><td>255</td></tr>
+          <tr class="total-row"><td>Total</td><td></td><td></td><td></td><td>13,005</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">ACAS Xu Inputs</div>
+      <table>
+        <thead><tr><th>Input</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>rho</code></td><td>Distance to intruder (ft)</td></tr>
+          <tr><td><code>theta</code></td><td>Angle to intruder relative to ownship heading (rad)</td></tr>
+          <tr><td><code>psi</code></td><td>Heading angle of intruder relative to ownship (rad)</td></tr>
+          <tr><td><code>v_own</code></td><td>Speed of ownship (ft/s)</td></tr>
+          <tr><td><code>v_int</code></td><td>Speed of intruder (ft/s)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">ACAS Xu Outputs</div>
+      <table>
+        <thead><tr><th>Index</th><th>Advisory</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Clear of Conflict</td></tr>
+          <tr><td>2</td><td>Weak Left</td></tr>
+          <tr><td>3</td><td>Weak Right</td></tr>
+          <tr><td>4</td><td>Strong Left</td></tr>
+          <tr><td>5</td><td>Strong Right</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== WORKFLOW PAGE ==================== -->
+<div id="page-workflow" class="page">
+  <h2 class="section-title">Import &amp; Deployment Workflow</h2>
+  <p class="section-subtitle">End-to-end pipeline from ONNX model to embedded C code generation.</p>
+
+  <div class="card" style="overflow-x: auto;">
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <div class="pipeline-box active">ONNX Model</div>
+        <div class="pipeline-arrow">&rarr;</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-box fail">importONNXNetwork (FAILED)</div>
+        <div class="pipeline-arrow">&rarr;</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-box success">Rebuild as native dlnetwork</div>
+        <div class="pipeline-arrow">&rarr;</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-box gold">INT8 Quantization</div>
+        <div class="pipeline-arrow">&rarr;</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-box active">exportNetworkToSimulink</div>
+        <div class="pipeline-arrow">&rarr;</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-box success">Embedded Coder</div>
+        <div class="pipeline-arrow">&rarr;</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-box" style="border-color: var(--purple); color: var(--purple);">C Code</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="workflow-steps">
+    <div class="step-card">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <h3>ONNX Import Attempt <span class="badge badge-red">FAILED</span></h3>
+        <p>Both <code>importONNXNetwork</code> and <code>importNetworkFromONNX</code> produced custom autogenerated layers
+        (e.g., <code>gemm</code> operations mapped to custom MATLAB classes). These custom layers are not supported
+        by <code>exportNetworkToSimulink</code> or Embedded Coder, blocking the deployment path.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">2</div>
+      <div class="step-content">
+        <h3>Native Rebuild <span class="badge badge-green">SUCCESS</span></h3>
+        <p>Rebuilt the network as a 14-layer <code>dlnetwork</code> using only native MATLAB layers:
+        <code>featureInputLayer</code>, <code>fullyConnectedLayer</code>, and <code>reluLayer</code>.
+        Weights and biases were extracted from the ONNX import and transferred to the native layers.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">3</div>
+      <div class="step-content">
+        <h3>Verification <span class="badge badge-green">PASSED</span></h3>
+        <p>Compared outputs of the ONNX-imported network vs. the native rebuild across test inputs.
+        Maximum absolute error: <code>2.21e-04</code>. Cosine similarity: <code>1.0</code>.
+        The small numerical differences are due to floating-point operation ordering.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">4</div>
+      <div class="step-content">
+        <h3>INT8 Quantization <span class="badge badge-gold">INT8</span></h3>
+        <p>Applied post-training quantization using <code>dlquantizer</code> with 1,000 calibration samples.
+        Weights quantized to <code>int8_T</code>, biases to <code>int32_T</code>, with per-layer scale factors
+        implemented as bit-shift operations in the generated C code.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">5</div>
+      <div class="step-content">
+        <h3>Simulink Export <span class="badge badge-blue">SIMULINK</span></h3>
+        <p>Exported via <code>exportNetworkToSimulink</code> which creates a Simulink model with
+        <code>DataTypeConversion</code> blocks at input and output boundaries to handle INT8 casting.
+        Each fully connected layer becomes a Simulink subsystem block.</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-number">6</div>
+      <div class="step-content">
+        <h3>C Code Generation <span class="badge badge-purple">EMBEDDED CODER</span></h3>
+        <p>Generated C code using Embedded Coder with <code>ert.tlc</code> system target file.
+        <code>InstructionSetExtensions</code> set to <code>'None'</code> for maximum portability.
+        Produces 320 lines of C in the main step function with quantized int8 computations.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== QUANTIZATION PAGE ==================== -->
+<div id="page-quantization" class="page">
+  <h2 class="section-title">INT8 Quantization Details</h2>
+  <p class="section-subtitle">Calibration ranges and data type assignments for quantized deployment.</p>
+
+  <div class="card">
+    <div class="card-title">Calibration Ranges (Weights &amp; Activations)</div>
+    <div class="chart-container">
+      <canvas id="calibrationChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Quantization Parameters (28 Entries)</div>
+    <div class="table-wrap">
+      <table id="quant-table">
+        <thead>
+          <tr><th>Layer</th><th>Parameter Type</th><th>Min Value</th><th>Max Value</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Generated C Data Types</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Layer</th><th>Weights Type</th><th>Bias Type</th><th>Activation Type</th><th>Bit-Shift Scaling</th></tr></thead>
+        <tbody>
+          <tr><td>fc1</td><td><span class="badge badge-blue">int8_T</span></td><td><span class="badge badge-orange">int32_T</span></td><td><span class="badge badge-blue">int8_T</span></td><td><code>&gt;&gt; 6</code></td></tr>
+          <tr><td>fc2</td><td><span class="badge badge-blue">int8_T</span></td><td><span class="badge badge-orange">int32_T</span></td><td><span class="badge badge-blue">int8_T</span></td><td><code>&gt;&gt; 3</code></td></tr>
+          <tr><td>fc3</td><td><span class="badge badge-blue">int8_T</span></td><td><span class="badge badge-orange">int32_T</span></td><td><span class="badge badge-blue">int8_T</span></td><td><code>&gt;&gt; 4</code></td></tr>
+          <tr><td>fc4</td><td><span class="badge badge-blue">int8_T</span></td><td><span class="badge badge-orange">int32_T</span></td><td><span class="badge badge-blue">int8_T</span></td><td><code>&gt;&gt; 4</code></td></tr>
+          <tr><td>fc5</td><td><span class="badge badge-blue">int8_T</span></td><td><span class="badge badge-orange">int32_T</span></td><td><span class="badge badge-blue">int8_T</span></td><td><code>&gt;&gt; 3</code></td></tr>
+          <tr><td>fc6</td><td><span class="badge badge-blue">int8_T</span></td><td><span class="badge badge-orange">int32_T</span></td><td><span class="badge badge-blue">int8_T</span></td><td><code>&gt;&gt; 4</code></td></tr>
+          <tr><td>fc7</td><td><span class="badge badge-blue">int8_T</span></td><td><span class="badge badge-orange">int32_T</span></td><td><span class="badge badge-gold">real32_T</span></td><td><code>float output</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Quantization Notes</div>
+    <p class="description" style="margin-bottom: 0;">
+      Bit-shift scaling replaces floating-point multiplication with integer shift operations for efficiency on embedded targets.
+      For example, <code>&gt;&gt; 6</code> divides the accumulator by 64, implementing the combined weight/activation scale factor.
+      The final layer (fc7) outputs <code>real32_T</code> (float) because the ACAS Xu advisory scores require floating-point comparison.
+    </p>
+  </div>
+</div>
+
+<!-- ==================== GENERATED CODE PAGE ==================== -->
+<div id="page-code" class="page">
+  <h2 class="section-title">Generated C Code</h2>
+  <p class="section-subtitle">Embedded Coder output with INT8 quantized inference.</p>
+
+  <div class="card">
+    <div class="card-title">File Inventory</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>File</th><th>Size</th><th>Lines</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>ACASXU_Simulink.c</code></td><td>6.8 KB</td><td>320</td><td>Main model step function</td></tr>
+          <tr><td><code>ACASXU_Simulink.h</code></td><td>8.5 KB</td><td>236</td><td>Type definitions and API</td></tr>
+          <tr><td><code>ACASXU_Simulink_data.c</code></td><td>306 KB</td><td>~8000</td><td>Quantized weights (int8_T) and biases (int32_T)</td></tr>
+          <tr><td><code>ert_main.c</code></td><td>3 KB</td><td>105</td><td>Real-time execution harness</td></tr>
+          <tr><td><code>ACASXU_Simulink_private.h</code></td><td>0.9 KB</td><td>-</td><td>Private declarations</td></tr>
+          <tr><td><code>rtwtypes.h</code></td><td>4.7 KB</td><td>-</td><td>Runtime type definitions</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Source Files</div>
+
+    <details id="details-main-c">
+      <summary>ACASXU_Simulink.c <span class="badge badge-blue">320 lines</span></summary>
+      <div class="code-block">
+        <div class="loading-code" id="loading-main-c">Loading from GitHub...</div>
+        <pre style="display:none"><code class="language-c" id="code-main-c"></code></pre>
+      </div>
+    </details>
+
+    <details id="details-header-h">
+      <summary>ACASXU_Simulink.h <span class="badge badge-blue">236 lines</span></summary>
+      <div class="code-block">
+        <div class="loading-code" id="loading-header-h">Loading from GitHub...</div>
+        <pre style="display:none"><code class="language-c" id="code-header-h"></code></pre>
+      </div>
+    </details>
+
+    <details id="details-ert-main">
+      <summary>ert_main.c <span class="badge badge-blue">105 lines</span></summary>
+      <div class="code-block">
+        <div class="loading-code" id="loading-ert-main">Loading from GitHub...</div>
+        <pre style="display:none"><code class="language-c" id="code-ert-main"></code></pre>
+      </div>
+    </details>
+  </div>
+
+  <div class="card">
+    <div class="card-title">API Documentation</div>
+    <div class="api-card">
+      <h4>void ACASXU_Simulink_initialize(void)</h4>
+      <p>Initialize model state. Must be called once before the first step call.</p>
+    </div>
+    <div class="api-card">
+      <h4>void ACASXU_Simulink_step(void)</h4>
+      <p>Execute one inference step. Reads from <code>ACASXU_Simulink_U</code> (5 float inputs) and writes to <code>ACASXU_Simulink_Y</code> (5 float outputs).</p>
+    </div>
+    <div class="api-card">
+      <h4>void ACASXU_Simulink_terminate(void)</h4>
+      <p>Clean up model resources. Call once after the last step.</p>
+    </div>
+    <div class="api-card">
+      <h4>ExtU_ACASXU_Simulink_T ACASXU_Simulink_U</h4>
+      <p>Input struct with field <code>input</code> &mdash; a <code>real32_T[5]</code> array containing [rho, theta, psi, v_own, v_int].</p>
+    </div>
+    <div class="api-card">
+      <h4>ExtY_ACASXU_Simulink_T ACASXU_Simulink_Y</h4>
+      <p>Output struct with field <code>fc7_out</code> &mdash; a <code>real32_T[5]</code> array containing advisory scores.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Quantized Computation Flow (Step Function)</div>
+    <p class="description" style="margin-bottom:16px;">The generated C step function implements INT8 matrix multiplication with bit-shift scaling between layers:</p>
+    <div style="background: var(--bg); border-radius: 8px; padding: 16px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; line-height: 1.6; color: var(--muted); overflow-x: auto;">
+      <span style="color: var(--green);">// 1. Cast float inputs to int8</span><br>
+      input_int8 = (int8_T)roundf(input_float * input_scale);<br><br>
+      <span style="color: var(--green);">// 2. INT8 matrix multiply + INT32 bias add</span><br>
+      for each layer fc_k:<br>
+      &nbsp;&nbsp;acc_int32 = bias_int32[j];<br>
+      &nbsp;&nbsp;for i = 0..N:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;acc_int32 += weight_int8[j][i] * input_int8[i];<br><br>
+      <span style="color: var(--green);">// 3. Bit-shift scale + ReLU</span><br>
+      &nbsp;&nbsp;output_int8 = (int8_T)max(0, acc_int32 >> shift_k);<br><br>
+      <span style="color: var(--green);">// 4. Final layer: cast int32 accumulator back to float</span><br>
+      output_float = (real32_T)acc_int32 * output_scale;
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SIMULINK MODEL PAGE ==================== -->
+<div id="page-simulink" class="page">
+  <h2 class="section-title">Simulink Model</h2>
+  <p class="section-subtitle">Block diagram generated by <code>exportNetworkToSimulink</code>.</p>
+
+  <div class="card">
+    <div class="card-title">Signal Flow</div>
+    <div class="block-diagram">
+      <div class="block-box inport">Inport (input)</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box cast">fc1_in_cast</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box fc">fc1</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box relu">relu1</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box fc">fc2</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box relu">relu2</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box fc">fc3</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box relu">relu3</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box fc">fc4</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box relu">relu4</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box fc">fc5</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box relu">relu5</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box fc">fc6</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box relu">relu6</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box fc">fc7</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box cast">fc7_out_cast</div>
+      <div class="block-arrow">&rarr;</div>
+      <div class="block-box outport">Outport (fc7_out)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Simulink Blocks</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Block Name</th><th>Block Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>input</code></td><td><span class="badge badge-green">Inport</span></td><td>5-element float input vector</td></tr>
+          <tr><td><code>fc1_in_cast</code></td><td><span class="badge badge-orange">DataTypeConversion</span></td><td>Cast float32 to int8 for quantized input</td></tr>
+          <tr><td><code>fc1</code></td><td><span class="badge badge-blue">Subsystem (FC)</span></td><td>Fully connected: int8 weights, int32 bias, int8 output</td></tr>
+          <tr><td><code>relu1</code></td><td><span class="badge badge-gold">Subsystem (ReLU)</span></td><td>Rectified linear activation (int8)</td></tr>
+          <tr><td><code>fc2</code></td><td><span class="badge badge-blue">Subsystem (FC)</span></td><td>Fully connected layer 2</td></tr>
+          <tr><td><code>relu2</code></td><td><span class="badge badge-gold">Subsystem (ReLU)</span></td><td>ReLU activation 2</td></tr>
+          <tr><td><code>fc3</code></td><td><span class="badge badge-blue">Subsystem (FC)</span></td><td>Fully connected layer 3</td></tr>
+          <tr><td><code>relu3</code></td><td><span class="badge badge-gold">Subsystem (ReLU)</span></td><td>ReLU activation 3</td></tr>
+          <tr><td><code>fc4</code></td><td><span class="badge badge-blue">Subsystem (FC)</span></td><td>Fully connected layer 4</td></tr>
+          <tr><td><code>relu4</code></td><td><span class="badge badge-gold">Subsystem (ReLU)</span></td><td>ReLU activation 4</td></tr>
+          <tr><td><code>fc5</code></td><td><span class="badge badge-blue">Subsystem (FC)</span></td><td>Fully connected layer 5</td></tr>
+          <tr><td><code>relu5</code></td><td><span class="badge badge-gold">Subsystem (ReLU)</span></td><td>ReLU activation 5</td></tr>
+          <tr><td><code>fc6</code></td><td><span class="badge badge-blue">Subsystem (FC)</span></td><td>Fully connected layer 6</td></tr>
+          <tr><td><code>relu6</code></td><td><span class="badge badge-gold">Subsystem (ReLU)</span></td><td>ReLU activation 6</td></tr>
+          <tr><td><code>fc7</code></td><td><span class="badge badge-blue">Subsystem (FC)</span></td><td>Final fully connected: 50 &rarr; 5 outputs</td></tr>
+          <tr><td><code>fc7_out_cast</code></td><td><span class="badge badge-orange">DataTypeConversion</span></td><td>Cast int8/int32 back to float32 output</td></tr>
+          <tr><td><code>fc7_out</code></td><td><span class="badge badge-purple">Outport</span></td><td>5-element float output vector</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Subsystem Hierarchy</div>
+    <div class="tree">
+      <div><span class="folder">ACASXU_Simulink</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|-- </span><span class="file">input (Inport)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|-- </span><span class="file">fc1_in_cast (DataTypeConversion)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|-- </span><span class="folder">fc1/ (Subsystem)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|-- </span><span class="file">Weights (Constant: int8_T[50x5])</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|-- </span><span class="file">Bias (Constant: int32_T[50])</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|-- </span><span class="file">MatMul (Product)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|-- </span><span class="file">BiasAdd (Sum)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|-- </span><span class="file">Shift (Shift Arithmetic &gt;&gt; 6)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|-- </span><span class="folder">relu1/ (Subsystem)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|-- </span><span class="file">Max (MinMax: max(0, x))</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|-- </span><span class="folder">fc2/ (Subsystem)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|-- </span><span class="folder">relu2/ (Subsystem)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|-- </span><span class="file">... (fc3-fc6, relu3-relu6)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|-- </span><span class="folder">fc7/ (Subsystem)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|-- </span><span class="file">Weights (Constant: int8_T[5x50])</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|-- </span><span class="file">Bias (Constant: int32_T[5])</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|-- </span><span class="file">MatMul (Product)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|-- </span><span class="file">BiasAdd (Sum)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|-- </span><span class="file">FloatCast (DataTypeConversion)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|-- </span><span class="file">fc7_out_cast (DataTypeConversion)</span></div>
+      <div><span class="indent">&nbsp;&nbsp;|-- </span><span class="file">fc7_out (Outport)</span></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<!-- Footer -->
+<div class="footer">
+  Generated with Claude Code | March 2026
+</div>
+
+<script>
+// ==================== Navigation ====================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.topbar-nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
+
+  if (name === 'quantization' && !window._chartInit) {
+    initChart();
+    window._chartInit = true;
+  }
+}
+
+// ==================== Code Loading ====================
+const codeFiles = [
+  {
+    id: 'main-c',
+    url: 'https://raw.githubusercontent.com/aturevsk/ACASXU/main/ACASXU_Simulink_ert_rtw/ACASXU_Simulink.c'
+  },
+  {
+    id: 'header-h',
+    url: 'https://raw.githubusercontent.com/aturevsk/ACASXU/main/ACASXU_Simulink_ert_rtw/ACASXU_Simulink.h'
+  },
+  {
+    id: 'ert-main',
+    url: 'https://raw.githubusercontent.com/aturevsk/ACASXU/main/ACASXU_Simulink_ert_rtw/ert_main.c'
+  }
+];
+
+codeFiles.forEach(file => {
+  const details = document.getElementById('details-' + file.id);
+  let loaded = false;
+
+  details.addEventListener('toggle', function() {
+    if (details.open && !loaded) {
+      loaded = true;
+      fetch(file.url)
+        .then(r => {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.text();
+        })
+        .then(text => {
+          const codeEl = document.getElementById('code-' + file.id);
+          codeEl.textContent = text;
+          hljs.highlightElement(codeEl);
+          document.getElementById('loading-' + file.id).style.display = 'none';
+          codeEl.parentElement.style.display = 'block';
+        })
+        .catch(err => {
+          document.getElementById('loading-' + file.id).textContent =
+            'Failed to load: ' + err.message;
+        });
+    }
+  });
+});
+
+// ==================== Quantization Data ====================
+const quantData = [
+  { layer: 'fc1', type: 'Weights', min: -0.4832, max: 0.4516 },
+  { layer: 'fc1', type: 'Bias', min: -1.3690, max: 0.9513 },
+  { layer: 'fc1', type: 'Activations', min: -0.7880, max: 1.5959 },
+  { layer: 'relu1', type: 'Activations', min: 0, max: 1.5959 },
+  { layer: 'fc2', type: 'Weights', min: -1.2175, max: 1.0791 },
+  { layer: 'fc2', type: 'Bias', min: -1.0968, max: 0.8754 },
+  { layer: 'fc2', type: 'Activations', min: -2.9516, max: 3.3847 },
+  { layer: 'relu2', type: 'Activations', min: 0, max: 3.3847 },
+  { layer: 'fc3', type: 'Weights', min: -0.7736, max: 0.6694 },
+  { layer: 'fc3', type: 'Bias', min: -1.2458, max: 0.6547 },
+  { layer: 'fc3', type: 'Activations', min: -2.8159, max: 2.7296 },
+  { layer: 'relu3', type: 'Activations', min: 0, max: 2.7296 },
+  { layer: 'fc4', type: 'Weights', min: -0.6960, max: 0.7124 },
+  { layer: 'fc4', type: 'Bias', min: -0.6993, max: 0.8834 },
+  { layer: 'fc4', type: 'Activations', min: -2.0413, max: 2.1781 },
+  { layer: 'relu4', type: 'Activations', min: 0, max: 2.1781 },
+  { layer: 'fc5', type: 'Weights', min: -0.9221, max: 0.8579 },
+  { layer: 'fc5', type: 'Bias', min: -0.8620, max: 0.7775 },
+  { layer: 'fc5', type: 'Activations', min: -2.6183, max: 2.8505 },
+  { layer: 'relu5', type: 'Activations', min: 0, max: 2.8505 },
+  { layer: 'fc6', type: 'Weights', min: -0.6959, max: 0.7710 },
+  { layer: 'fc6', type: 'Bias', min: -0.9133, max: 0.7756 },
+  { layer: 'fc6', type: 'Activations', min: -2.0925, max: 2.2816 },
+  { layer: 'relu6', type: 'Activations', min: 0, max: 2.2816 },
+  { layer: 'fc7', type: 'Weights', min: -0.7697, max: 0.9042 },
+  { layer: 'fc7', type: 'Bias', min: -3.6972, max: 3.3762 },
+  { layer: 'fc7', type: 'Activations', min: -9.8837, max: 5.7498 },
+  { layer: 'output', type: 'Activations', min: -9.8837, max: 5.7498 }
+];
+
+// Populate quantization table
+const qtbody = document.querySelector('#quant-table tbody');
+quantData.forEach(row => {
+  const tr = document.createElement('tr');
+  let badgeClass = 'badge-blue';
+  if (row.type === 'Bias') badgeClass = 'badge-orange';
+  if (row.type === 'Activations') badgeClass = 'badge-green';
+  tr.innerHTML = `<td><code>${row.layer}</code></td>
+    <td><span class="badge ${badgeClass}">${row.type}</span></td>
+    <td>${row.min.toFixed(4)}</td>
+    <td>${row.max.toFixed(4)}</td>`;
+  qtbody.appendChild(tr);
+});
+
+// ==================== Chart ====================
+function initChart() {
+  const labels = quantData.map(d => d.layer + ' (' + d.type[0] + ')');
+  const mins = quantData.map(d => d.min);
+  const maxs = quantData.map(d => d.max);
+
+  const ctx = document.getElementById('calibrationChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Min Value',
+          data: mins,
+          backgroundColor: 'rgba(0, 118, 168, 0.7)',
+          borderColor: 'rgba(0, 118, 168, 1)',
+          borderWidth: 1
+        },
+        {
+          label: 'Max Value',
+          data: maxs,
+          backgroundColor: 'rgba(237, 177, 32, 0.7)',
+          borderColor: 'rgba(237, 177, 32, 1)',
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: '#8899b8', font: { size: 12 } }
+        },
+        tooltip: {
+          backgroundColor: '#112240',
+          borderColor: '#234578',
+          borderWidth: 1,
+          titleColor: '#e2e8f0',
+          bodyColor: '#8899b8'
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8899b8', font: { size: 10 }, maxRotation: 90, minRotation: 45 },
+          grid: { color: 'rgba(35, 69, 120, 0.3)' }
+        },
+        y: {
+          ticks: { color: '#8899b8' },
+          grid: { color: 'rgba(35, 69, 120, 0.3)' }
+        }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
